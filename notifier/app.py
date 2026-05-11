@@ -169,6 +169,23 @@ scheduler.start()
 
 # ── エンドポイント ────────────────────────────────────────
 
+@app.route("/notify", methods=["POST"])
+def notify():
+    """MacroDroid などの自動化アプリから lat/lon を受け取って通知する。"""
+    body = request.get_json(force=True, silent=True) or {}
+    try:
+        lat = float(body["lat"])
+        lon = float(body["lon"])
+    except (KeyError, ValueError):
+        return jsonify({"error": "lat と lon が必要です"}), 400
+
+    train_msg = build_train_message(lat, lon)
+    if train_msg:
+        push_line_message(train_msg)
+        return jsonify({"status": "notified"})
+    return jsonify({"status": "home"})
+
+
 @app.route("/webhook", methods=["POST"])
 def webhook():
     signature = request.headers.get("X-Line-Signature", "")
