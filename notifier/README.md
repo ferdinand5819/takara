@@ -62,56 +62,74 @@ HOME_LON = 139.XXXX
 5. デプロイ完了後、「Settings」→「Public Networking」でドメインを発行
    - 例: `https://your-app.railway.app`
 
-### 5. スマホの自動化設定
+### 5. Android の自動化設定（MacroDroid）
+
+[MacroDroid](https://play.google.com/store/apps/details?id=com.arlosoft.macrodroid) をインストールします（無料・マクロ5個まで無料枠で十分）。
 
 デプロイ後の URL を `https://your-app.railway.app/notify` として使います。
 
-#### iPhone (ショートカット)
+#### 手順
 
-1. **ショートカット** アプリ → 「オートメーション」タブ → 「+」
-2. 「時刻」→ 23:00 に設定 → 「毎日」
-3. 以下のアクションを追加:
+**① 新しいマクロを作成**
 
+MacroDroid を開き、右下の「＋」→「マクロを追加」
+
+---
+
+**② トリガーを設定**
+
+「トリガーを追加」→「時計/カレンダー」→「指定時刻」
+- 時刻: **23:00**
+- 繰り返し: **毎日**
+
+---
+
+**③ アクションを設定（順番通りに追加）**
+
+「アクションを追加」から以下を順に追加します。
+
+**アクション 1: 現在地を取得**
+- カテゴリ: 「位置情報」→「現在地の座標を取得」
+- 保存先の変数名: `latitude`（緯度）、`longitude`（経度）を自動で保存
+
+> ※ 位置情報の権限を「常に許可」にしておく必要があります
+> （Android 設定 → アプリ → MacroDroid → 権限 → 位置情報 → 常に許可）
+
+**アクション 2: HTTP リクエストを送信**
+- カテゴリ: 「接続性」→「HTTP リクエスト」
+- 設定内容:
+
+| 項目 | 値 |
+|------|-----|
+| URL | `https://your-app.railway.app/notify` |
+| HTTP メソッド | `POST` |
+| ヘッダー（追加） | `Content-Type: application/json` |
+| リクエスト本文 | 下記参照 |
+
+リクエスト本文（コピー＆ペーストしてください）:
 ```
-[現在地を取得]
-   ↓
-[変数を設定: myLocation = 現在地]
-   ↓
-[URLの内容を取得]
-   URL: https://your-app.railway.app/notify
-   方法: POST
-   ヘッダー: Content-Type = application/json
-   本文(JSON):
-     lat = [マジック変数: myLocation の 緯度]
-     lon = [マジック変数: myLocation の 経度]
+{"lat": {latitude}, "lon": {longitude}}
 ```
+> `{latitude}` `{longitude}` は MacroDroid の変数記法です。そのまま入力してください。
 
-**具体的な手順:**
-1. アクション追加 →「現在地を取得」を検索して追加
-2. アクション追加 →「URLの内容を取得」を追加
-   - URL に `https://your-app.railway.app/notify` を入力
-   - 「詳細を表示」→ 方法: `POST`
-   - ヘッダー: `Content-Type` / `application/json`
-   - 本文: `JSON` を選択
-     - キー `lat`、値: 「現在地を取得」の結果から「緯度」（変数アイコンをタップして選択）
-     - キー `lon`、値: 同様に「経度」
+---
 
-#### Android (Tasker ※無料の MacroDroid でも可)
+**④ 制約を設定（任意・推奨）**
 
-**MacroDroid（無料）の場合:**
+「制約を追加」→「電話/通話状態」→「通話中でない」を追加しておくと通話中に誤動作しません。
 
-1. MacroDroid をインストール
-2. 「マクロを追加」
-3. **トリガー**: 「時計/日付」→「時刻を指定」→ 23:00
-4. **アクション**:
-   - 「接続性」→「HTTP リクエスト」
-   - URL: `https://your-app.railway.app/notify`
-   - 方法: POST
-   - 本文（JSON）:
-     ```json
-     {"lat": "[location_latitude]", "lon": "[location_longitude]"}
-     ```
-   - ※ MacroDroid の変数: `{location_latitude}`, `{location_longitude}`
+---
+
+**⑤ マクロを保存**
+
+名前（例: 終電通知）を入力して保存。トグルスイッチが ON になっていることを確認。
+
+---
+
+#### 動作確認
+
+マクロ一覧でマクロを長押し → 「実行」で即時テストできます。
+位置情報を取得しサーバーに送信、自宅から離れていれば LINE に通知が来ます。
 
 ---
 
