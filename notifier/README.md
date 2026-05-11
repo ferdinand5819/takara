@@ -1,13 +1,25 @@
 # 終電 LINE 通知
 
-23:00 にスマホの位置情報を確認し、自宅から離れていたら終電情報を LINE に送ります。
+**追加アプリのインストール不要。** LINE だけで動きます。
+
+## 動作の流れ
+
+```
+23:00 サーバーが自動で LINE に送信
+  「現在地を送ってください 📍」
+        ↓
+  LINE の「＋」→「位置情報」をタップ（5秒）
+        ↓
+  自宅付近 → 「おつかれさまでした！」
+  離れてる → 「【終電アラート】出発 23:12 / 到着 00:04 ...」
+```
 
 ## コスト
 
 | サービス | 無料枠 | 実際の費用 |
 |---------|--------|-----------|
 | LINE Messaging API | 200通/月 | 無料 |
-| Google Maps Directions API | $200/月クレジット | 実質無料（月30回≒$0.15） |
+| Google Maps Directions API | $200/月クレジット | 実質無料（月60回≒$0.30） |
 | Railway (ホスティング) | $5/月クレジット | 無料枠で収まる |
 
 ---
@@ -16,120 +28,76 @@
 
 ### 1. LINE Messaging API の設定
 
-1. [LINE Developers](https://developers.line.biz/) にアクセスし、LINEアカウントでログイン
-2. **新しい Provider** を作成（名前は何でも可）
-3. **Messaging API チャネル** を作成
+1. [LINE Developers](https://developers.line.biz/) にアクセス → LINE アカウントでログイン
+2. **新しい Provider を作成**（名前は何でも可）
+3. **「Messaging API」チャネルを作成**
    - チャネルの種類: Messaging API
    - チャネル名: 任意（例: 終電通知）
-4. **チャネルアクセストークン** を発行（「チャネル設定」→「Messaging API設定」→下部で発行）
-5. **自分の LINE User ID** を取得
-   - 「LINE Developers コンソール」右上のアイコン → 「Your user ID」に表示される `U...` の文字列
-6. 作成したボットを **LINE アプリで友だち追加**（QRコードはチャネル設定ページにあります）
+4. 「**チャネル基本設定**」タブ → **チャネルシークレット**をコピー
+5. 「**Messaging API 設定**」タブ → 一番下の「**チャネルアクセストークン（長期）**」を発行 → コピー
+6. 同ページの **Webhook URL** 欄に、Railway デプロイ後の URL を設定（後述）
+   - 例: `https://your-app.railway.app/webhook`
+   - 「Webhook の利用」を **ON** にする
+7. **自分の LINE User ID を取得**
+   - コンソール右上のアイコン → **「Your user ID」** に表示される `U` で始まる文字列
+8. 作成したボットを **LINE で友だち追加**（チャネル設定ページの QR コードから）
 
 ```
-LINE_CHANNEL_TOKEN = 手順4のトークン
-LINE_USER_ID      = 手順5のUser ID（U で始まる文字列）
+LINE_CHANNEL_SECRET = 手順4のチャネルシークレット
+LINE_CHANNEL_TOKEN  = 手順5のチャネルアクセストークン
+LINE_USER_ID        = 手順7のUser ID（U で始まる文字列）
 ```
+
+---
 
 ### 2. Google Maps API の設定（任意）
 
-設定しない場合は Google Maps リンクのみ送信されます。設定すると出発・到着時刻も通知されます。
+設定しない場合は Google マップのリンクだけ送信されます。  
+設定すると **出発・到着時刻・乗換路線** も通知に含まれます。
 
 1. [Google Cloud Console](https://console.cloud.google.com/) でプロジェクト作成
 2. 「Directions API」を有効化
-3. APIキーを作成（「認証情報」→「APIキーを作成」）
-4. **請求先アカウントを設定**（クレジットカード必要。月$200無料枠があるので実際には請求なし）
+3. 「認証情報」→「APIキーを作成」
+4. **請求先アカウントを設定**（カード登録必要。月 $200 無料枠があるので実際には無料）
 
 ```
-GOOGLE_MAPS_KEY = 作成したAPIキー
+GOOGLE_MAPS_KEY = 作成した API キー
 ```
+
+---
 
 ### 3. 自宅座標の確認
 
-Google Maps で自宅を右クリック → 緯度・経度をコピー
+Google Maps で自宅を長押し → 緯度・経度をコピー
 
 ```
 HOME_LAT = 35.XXXX
 HOME_LON = 139.XXXX
 ```
 
+---
+
 ### 4. Railway へのデプロイ
 
 1. [Railway](https://railway.app/) に GitHub アカウントでサインアップ
 2. 「New Project」→「Deploy from GitHub repo」→ このリポジトリを選択
-3. 「Root Directory」を `notifier` に設定
-4. 「Variables」タブで環境変数を設定（`.env.example` の内容を参考に）
-5. デプロイ完了後、「Settings」→「Public Networking」でドメインを発行
+3. 「**Root Directory**」を `notifier` に設定
+4. 「**Variables**」タブで環境変数を設定（`.env.example` を参考に）
+5. デプロイ完了後、「**Settings**」→「**Public Networking**」でドメインを発行
    - 例: `https://your-app.railway.app`
-
-### 5. Android の自動化設定（MacroDroid）
-
-[MacroDroid](https://play.google.com/store/apps/details?id=com.arlosoft.macrodroid) をインストールします（無料・マクロ5個まで無料枠で十分）。
-
-デプロイ後の URL を `https://your-app.railway.app/notify` として使います。
-
-#### 手順
-
-**① 新しいマクロを作成**
-
-MacroDroid を開き、右下の「＋」→「マクロを追加」
+6. 発行した URL + `/webhook` を LINE Developers の Webhook URL に設定（手順1-6）
 
 ---
 
-**② トリガーを設定**
+### 5. 動作確認
 
-「トリガーを追加」→「時計/カレンダー」→「指定時刻」
-- 時刻: **23:00**
-- 繰り返し: **毎日**
+LINE でボットに **テキストメッセージ** を送っても反応しません（位置情報のみ処理します）。
 
----
+位置情報を送って試してみてください：
 
-**③ アクションを設定（順番通りに追加）**
-
-「アクションを追加」から以下を順に追加します。
-
-**アクション 1: 現在地を取得**
-- カテゴリ: 「位置情報」→「現在地の座標を取得」
-- 保存先の変数名: `latitude`（緯度）、`longitude`（経度）を自動で保存
-
-> ※ 位置情報の権限を「常に許可」にしておく必要があります
-> （Android 設定 → アプリ → MacroDroid → 権限 → 位置情報 → 常に許可）
-
-**アクション 2: HTTP リクエストを送信**
-- カテゴリ: 「接続性」→「HTTP リクエスト」
-- 設定内容:
-
-| 項目 | 値 |
-|------|-----|
-| URL | `https://your-app.railway.app/notify` |
-| HTTP メソッド | `POST` |
-| ヘッダー（追加） | `Content-Type: application/json` |
-| リクエスト本文 | 下記参照 |
-
-リクエスト本文（コピー＆ペーストしてください）:
-```
-{"lat": {latitude}, "lon": {longitude}}
-```
-> `{latitude}` `{longitude}` は MacroDroid の変数記法です。そのまま入力してください。
-
----
-
-**④ 制約を設定（任意・推奨）**
-
-「制約を追加」→「電話/通話状態」→「通話中でない」を追加しておくと通話中に誤動作しません。
-
----
-
-**⑤ マクロを保存**
-
-名前（例: 終電通知）を入力して保存。トグルスイッチが ON になっていることを確認。
-
----
-
-#### 動作確認
-
-マクロ一覧でマクロを長押し → 「実行」で即時テストできます。
-位置情報を取得しサーバーに送信、自宅から離れていれば LINE に通知が来ます。
+- LINE でボットのトーク画面を開く
+- 「＋」→「位置情報」→ 現在地または任意の場所を送信
+- 自宅から離れた座標なら終電情報が返ってくれば成功
 
 ---
 
@@ -139,36 +107,49 @@ MacroDroid を開き、右下の「＋」→「マクロを追加」
 cd notifier
 pip install -r requirements.txt
 cp .env.example .env
-# .env を編集して実際の値を設定
+# .env を実際の値で編集
 
 python app.py
 ```
 
-別ターミナルでテスト（自宅から離れた座標を指定）:
+webhook のテスト（curl）:
 
 ```bash
-# 自宅から離れた場所（通知が来るはず）
-curl -X POST http://localhost:5000/notify \
+# 自宅から離れた場所をシミュレート
+curl -X POST http://localhost:5000/webhook \
   -H "Content-Type: application/json" \
-  -d '{"lat": 35.6812, "lon": 139.7671}'
-
-# 自宅付近（通知が来ないはず）
-curl -X POST http://localhost:5000/notify \
-  -H "Content-Type: application/json" \
-  -d '{"lat": YOUR_HOME_LAT, "lon": YOUR_HOME_LON}'
+  -H "X-Line-Signature: dummy" \
+  -d '{
+    "events": [{
+      "type": "message",
+      "replyToken": "dummy",
+      "message": {"type": "location", "latitude": 35.6812, "longitude": 139.7671}
+    }]
+  }'
 ```
+
+> ローカルテストは署名検証をスキップするため、本番では必ず Railway にデプロイして使ってください。
 
 ---
 
 ## 通知例
 
+**23:00 に届くメッセージ**
+```
+終電チェック 🚃
+現在地を送ってください📍
+
+LINE の「＋」ボタン →「位置情報」をタップ
+```
+
+**位置情報を送ったときの返信（自宅外の場合）**
 ```
 【終電アラート】
 自宅まで約 8.3km
 
 出発: 23:12
 到着: 00:04 (52分)
-経路: 23:12 渋谷→新宿(埼京線) / 23:31 新宿→○○(中央線)
+経路: 23:12 渋谷→新宿(山手線) / 23:28 新宿→○○(中央線)
 
 https://www.google.com/maps/dir/?...
 ```
