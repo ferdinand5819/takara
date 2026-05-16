@@ -141,7 +141,7 @@ def webhook():
     for event in body.get("events", []):
         uid = event.get("source", {}).get("userId")
         if uid:
-            app.logger.info(f"LINE USER ID: {uid}")
+            print(f"LINE USER ID: {uid}", flush=True)
     return jsonify({"status": "ok"})
 
 
