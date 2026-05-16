@@ -102,7 +102,7 @@ def notify():
         lat = float(body["lat"])
         lon = float(body["lon"])
     except (KeyError, ValueError):
-        return jsonify({"error": "lat と lon が必要です"}), 400
+        return jsonify({"error": "lat と lon が必要です", "received": body}), 400
 
     distance = haversine_km(lat, lon, HOME_LAT, HOME_LON)
 
