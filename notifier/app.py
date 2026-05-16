@@ -134,24 +134,27 @@ def notify():
     return jsonify({"status": "notified", "distance_km": round(distance, 2)})
 
 
+_stored_uid = None
+
+
 @app.route("/webhook", methods=["POST"])
 def webhook():
     """LINE User ID 取得用（設定完了後に削除可）"""
+    global _stored_uid
     body = request.get_json(force=True, silent=True) or {}
     for event in body.get("events", []):
         uid = event.get("source", {}).get("userId")
-        reply_token = event.get("replyToken")
-        if uid and reply_token:
-            requests.post(
-                "https://api.line.me/v2/bot/message/reply",
-                headers={
-                    "Authorization": f"Bearer {LINE_CHANNEL_TOKEN}",
-                    "Content-Type": "application/json",
-                },
-                json={"replyToken": reply_token, "messages": [{"type": "text", "text": f"あなたのUser ID:\n{uid}"}]},
-                timeout=10,
-            )
+        if uid:
+            _stored_uid = uid
     return jsonify({"status": "ok"})
+
+
+@app.route("/uid")
+def get_uid():
+    """取得した User ID を表示する（設定完了後に削除可）"""
+    if _stored_uid:
+        return jsonify({"user_id": _stored_uid})
+    return jsonify({"user_id": None, "message": "まだ受信していません。LINEでメッセージを送ってください。"})
 
 
 @app.route("/health")
