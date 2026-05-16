@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: last-train-notifier
+    runtime: python
+    rootDir: notifier
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    plan: free
+    envVars:
+      - key: HOME_LAT
+        sync: false
+      - key: HOME_LON
+        sync: false
+      - key: HOME_RADIUS_KM
+        value: "0.5"
+      - key: LINE_CHANNEL_TOKEN
+        sync: false
+      - key: LINE_USER_ID
+        sync: false
+      - key: SECRET_TOKEN
+        sync: false
+      - key: GOOGLE_MAPS_KEY
+        sync: false
