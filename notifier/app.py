@@ -95,6 +95,7 @@ def push_line_message(text):
 def notify():
     body = request.get_json(force=True, silent=True) or {}
 
+    print(f"RECEIVED BODY: {body}", flush=True)
     if body.get("token") != SECRET_TOKEN:
         return jsonify({"error": "unauthorized"}), 401
 
