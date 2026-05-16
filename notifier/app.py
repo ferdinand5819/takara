@@ -140,8 +140,17 @@ def webhook():
     body = request.get_json(force=True, silent=True) or {}
     for event in body.get("events", []):
         uid = event.get("source", {}).get("userId")
-        if uid:
-            print(f"LINE USER ID: {uid}", flush=True)
+        reply_token = event.get("replyToken")
+        if uid and reply_token:
+            requests.post(
+                "https://api.line.me/v2/bot/message/reply",
+                headers={
+                    "Authorization": f"Bearer {LINE_CHANNEL_TOKEN}",
+                    "Content-Type": "application/json",
+                },
+                json={"replyToken": reply_token, "messages": [{"type": "text", "text": f"あなたのUser ID:\n{uid}"}]},
+                timeout=10,
+            )
     return jsonify({"status": "ok"})
 
 
