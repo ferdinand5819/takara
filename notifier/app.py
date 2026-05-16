@@ -91,19 +91,26 @@ def push_line_message(text):
     ).raise_for_status()
 
 
-@app.route("/notify", methods=["POST"])
+@app.route("/notify", methods=["GET", "POST"])
 def notify():
-    body = request.get_json(force=True, silent=True) or {}
+    if request.method == "POST":
+        body = request.get_json(force=True, silent=True) or {}
+        token = body.get("token")
+        lat_raw = body.get("lat")
+        lon_raw = body.get("lon")
+    else:
+        token = request.args.get("token")
+        lat_raw = request.args.get("lat")
+        lon_raw = request.args.get("lon")
 
-    print(f"RECEIVED BODY: {body}", flush=True)
-    if body.get("token") != SECRET_TOKEN:
+    if token != SECRET_TOKEN:
         return jsonify({"error": "unauthorized"}), 401
 
     try:
-        lat = float(body["lat"])
-        lon = float(body["lon"])
-    except (KeyError, ValueError):
-        return jsonify({"error": "lat と lon が必要です", "received": body}), 400
+        lat = float(lat_raw)
+        lon = float(lon_raw)
+    except (TypeError, ValueError):
+        return jsonify({"error": "lat と lon が必要です"}), 400
 
     distance = haversine_km(lat, lon, HOME_LAT, HOME_LON)
 
