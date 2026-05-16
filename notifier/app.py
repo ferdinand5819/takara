@@ -106,7 +106,6 @@ def notify():
     if token != SECRET_TOKEN:
         return jsonify({"error": "unauthorized"}), 401
 
-    print(f"DEBUG lat_raw={lat_raw!r} lon_raw={lon_raw!r}", flush=True)
     try:
         lat = float(lat_raw)
         lon = float(lon_raw)
