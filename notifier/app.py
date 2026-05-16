@@ -134,6 +134,17 @@ def notify():
     return jsonify({"status": "notified", "distance_km": round(distance, 2)})
 
 
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    """LINE User ID 取得用（設定完了後に削除可）"""
+    body = request.get_json(force=True, silent=True) or {}
+    for event in body.get("events", []):
+        uid = event.get("source", {}).get("userId")
+        if uid:
+            app.logger.info(f"LINE USER ID: {uid}")
+    return jsonify({"status": "ok"})
+
+
 @app.route("/health")
 def health():
     return jsonify({"status": "ok"})
