@@ -103,6 +103,8 @@ def notify():
         lat_raw = request.args.get("lat")
         lon_raw = request.args.get("lon")
 
+    print(f"DEBUG token_ok={token==SECRET_TOKEN} lat={lat_raw!r} lon={lon_raw!r}", flush=True)
+
     if token != SECRET_TOKEN:
         return jsonify({"error": "unauthorized"}), 401
 
